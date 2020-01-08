@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton, QLabel, QLineEdit, 
-                             QTableView, QHBoxLayout, QVBoxLayout, QGroupBox, QFileDialog)
-from PyQt5.QtGui import QIcon
+                             QTableView, QHBoxLayout, QVBoxLayout, QGroupBox, QFileDialog, 
+                             QMessageBox)
+from PyQt5.QtGui import QIcon, QBrush
 from PyQt5.QtCore import QAbstractTableModel, Qt, QVariant, QModelIndex
 from os import getcwd
 import sys
@@ -31,10 +32,14 @@ class PandasModel(QAbstractTableModel):
                 return QVariant()
 
     def data(self, index, role=Qt.DisplayRole):
-        if role != Qt.DisplayRole:
-            return QVariant()
-
         if not index.isValid():
+            return QVariant()
+        elif role == Qt.BackgroundColorRole:
+            if str(self._df.ix[index.row(), index.column()]) == '1561944':
+                return QBrush(Qt.yellow)
+            # else:
+            #     return QBrush(Qt.red)
+        elif role != Qt.DisplayRole:
             return QVariant()
 
         return QVariant(str(self._df.ix[index.row(), index.column()]))
@@ -79,15 +84,23 @@ def btnCarregar(self):
         df = pd.read_csv(fileName, sep=';', engine='python')
         df = df.rename(columns={df.columns[0]:'Processo', df.columns[1]:'Entidade', df.columns[2]:'CPF/CNPJ', df.columns[3]:'Tipo Doc.', df.columns[4]:'Num. doc. Sigec', df.columns[5]:'Num. Sei', df.columns[15]:'Data', df.columns[18]:'Usuário'})
         df2 = df[['Processo','Entidade', 'CPF/CNPJ', 'Tipo Doc.', 'Num. doc. Sigec', 'Num. Sei', 'Data', 'Usuário']]
+        df2['Status']=""
         model = PandasModel(df2)
         app.tabela.setModel(model)
+
+def btnProcessar(self):
+    docsei = app.tabela.model().data(app.tabela.model().index(0, 5))
+    tam = app.tabela.model().rowCount()
+    print (str(tam))
+    print (docsei.value())
+
 
 class Principal(QWidget):
     def __init__(self, parent=None):
         super(Principal, self).__init__()
         self.setWindowTitle("Encaminha Notifiações SECC pelo Módulo SEI Correios")
         self.setWindowIcon(QIcon(".\\src\\app_icone.png"))
-        self.resize(860, 400)
+        self.resize(900, 400)
         self.grupo = QGroupBox("Selecione o arquivo contendo a lista de documentos gerados no SECC (*.csv):")
         self.botaoAbrir = QPushButton("Abrir")
         self.botaoCarregar = QPushButton("Carregar")
@@ -111,6 +124,7 @@ class Principal(QWidget):
         self.botaoAbrir.clicked.connect(btnAbrir)
         self.botaoCarregar.clicked.connect(btnCarregar)
         self.botaoSair.clicked.connect(root.instance().quit)
+        self.botaoProcessar.clicked.connect(btnProcessar)
 
 root=QApplication(sys.argv)
 app = Principal()
