@@ -4,8 +4,10 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton, QLabel, QLineEd
 from PyQt5.QtGui import QIcon, QBrush
 from PyQt5.QtCore import QAbstractTableModel, Qt, QVariant, QModelIndex
 from os import getcwd
+from numpy.random import randint
 import sys
 import pandas as pd
+import app
 
 class PandasModel(QAbstractTableModel): 
     def __init__(self, df = pd.DataFrame(), parent=None): 
@@ -35,10 +37,10 @@ class PandasModel(QAbstractTableModel):
         if not index.isValid():
             return QVariant()
         elif role == Qt.BackgroundColorRole:
-            if str(self._df.ix[index.row(), index.column()]) == '1561944':
-                return QBrush(Qt.yellow)
-            # else:
-            #     return QBrush(Qt.red)
+            if str(self._df.ix[index.row(), index.column()]) == 'Erro':
+                return QBrush(Qt.red)
+            elif str(self._df.ix[index.row(), index.column()]) == 'OK':
+                 return QBrush(Qt.green)
         elif role != Qt.DisplayRole:
             return QVariant()
 
@@ -89,10 +91,15 @@ def btnCarregar(self):
         app.tabela.setModel(model)
 
 def btnProcessar(self):
-    docsei = app.tabela.model().data(app.tabela.model().index(0, 5))
-    tam = app.tabela.model().rowCount()
-    print (str(tam))
-    print (docsei.value())
+    nRegistros = app.tabela.model().rowCount()
+    for i in range(nRegistros):
+        docsei = app.tabela.model().data(app.tabela.model().index(i, 5))
+        resultado = app.envia(docsei)
+        if resultado == 'Erro':
+            app.tabela.model().setData(app.tabela.model().index(i, 8), "Erro", Qt.EditRole)
+            #print (docsei.value())
+        else:
+            app.tabela.model().setData(app.tabela.model().index(i, 8), "OK", Qt.EditRole)
 
 
 class Principal(QWidget):
@@ -100,7 +107,7 @@ class Principal(QWidget):
         super(Principal, self).__init__()
         self.setWindowTitle("Encaminha Notifiações SECC pelo Módulo SEI Correios")
         self.setWindowIcon(QIcon(".\\src\\app_icone.png"))
-        self.resize(900, 400)
+        self.resize(960, 400)
         self.grupo = QGroupBox("Selecione o arquivo contendo a lista de documentos gerados no SECC (*.csv):")
         self.botaoAbrir = QPushButton("Abrir")
         self.botaoCarregar = QPushButton("Carregar")
