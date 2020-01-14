@@ -7,7 +7,7 @@ from os import getcwd
 from numpy.random import randint
 import sys
 import pandas as pd
-import app
+import pyautogui
 
 class PandasModel(QAbstractTableModel): 
     def __init__(self, df = pd.DataFrame(), parent=None): 
@@ -37,14 +37,14 @@ class PandasModel(QAbstractTableModel):
         if not index.isValid():
             return QVariant()
         elif role == Qt.BackgroundColorRole:
-            if str(self._df.ix[index.row(), index.column()]) == 'Erro':
+            if str(self._df.iloc[index.row(), index.column()]) == 'Erro':
                 return QBrush(Qt.red)
-            elif str(self._df.ix[index.row(), index.column()]) == 'OK':
+            elif str(self._df.iloc[index.row(), index.column()]) == 'OK':
                  return QBrush(Qt.green)
         elif role != Qt.DisplayRole:
             return QVariant()
 
-        return QVariant(str(self._df.ix[index.row(), index.column()]))
+        return QVariant(str(self._df.iloc[index.row(), index.column()]))
 
     def setData(self, index, value, role):
         row = self._df.index[index.row()]
@@ -58,6 +58,7 @@ class PandasModel(QAbstractTableModel):
             if dtype != object:
                 value = None if value == '' else dtype.type(value)
         self._df.set_value(row, col, value)
+        #self._df.at[row, col] = value
         return True
 
     def rowCount(self, parent=QModelIndex()): 
@@ -73,9 +74,46 @@ class PandasModel(QAbstractTableModel):
         self._df.reset_index(inplace=True, drop=True)
         self.layoutChanged.emit()
 
+def envia (documento):
+    status = None
+    try:
+        #im = pyautogui.screenshot()
+        pyautogui.moveTo(100, 200)
+        posicao = pyautogui.locateOnScreen('.\\src\\caixa_pesquisa.png')
+        caixa_pesquisa = [(posicao[0]+int(posicao[2]/2)), (posicao[1]+int(posicao[3]/2))]
+        pyautogui.click(caixa_pesquisa, button='left')
+        pyautogui.typewrite(documento)
+        pyautogui.typewrite('\n')
+        pyautogui.PAUSE = 0.5
+        posicao = None
+        pyautogui.moveTo(100, 200)
+        while posicao == None:
+            posicao = pyautogui.locateOnScreen('.\\src\\botao_correio.png')
+            root.processEvents()
+        botao_correio = [(posicao[0]+int(posicao[2]/2)), (posicao[1]+int(posicao[3]/2))]
+        pyautogui.click(botao_correio, button='left')
+        posicao = None
+        pyautogui.moveTo(100, 200)
+        while posicao == None:
+            posicao = pyautogui.locateOnScreen('.\\src\\tipo_impressao.png')
+            root.processEvents()
+
+        selecao_impressao = [(posicao[0]+9), (posicao[1]+9)]
+        pyautogui.click(selecao_impressao, button='left')
+        pyautogui.moveTo(100, 200)
+        posicao = pyautogui.locateOnScreen('.\\src\\solicitar_expedicao.png')
+        botao_expedicao = [(posicao[0]+int(posicao[2]/2)), (posicao[1]+int(posicao[3]/2))]
+        pyautogui.click(botao_expedicao, button='left')
+        status = 'OK'
+    except:
+        status = 'Erro'
+    
+    return status
+
+
 def btnAbrir(self):
-    options = QFileDialog.Options()
-    options =QFileDialog.DontUseNativeDialog
+    #options = QFileDialog.Options()
+    #options = QFileDialog.DontUseNativeDialog
     fileName, _ = QFileDialog.getOpenFileName(None, "Selecione o arquivo log do SECC", getcwd(), "csv (*.csv)")
     if fileName:
         app.caixaArquivo.setText(fileName.replace("/", "\\"))
@@ -93,8 +131,8 @@ def btnCarregar(self):
 def btnProcessar(self):
     nRegistros = app.tabela.model().rowCount()
     for i in range(nRegistros):
-        docsei = app.tabela.model().data(app.tabela.model().index(i, 5))
-        resultado = app.envia(docsei)
+        docsei = app.tabela.model().data(app.tabela.model().index(i, 5)).value()
+        resultado = envia(docsei)
         if resultado == 'Erro':
             app.tabela.model().setData(app.tabela.model().index(i, 8), "Erro", Qt.EditRole)
             #print (docsei.value())
